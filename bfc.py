@@ -9,10 +9,10 @@ import numpy as np
 
 from sklearn.feature_extraction.text import HashingVectorizer, TfidfVectorizer
 from sklearn.linear_model.stochastic_gradient import SGDClassifier
+from sklearn.cluster import MiniBatchKMeans
 from sklearn.linear_model import PassiveAggressiveClassifier
 from sklearn.preprocessing import LabelEncoder
-from sklearn.dummy import DummyClassifier
-from sklearn.cross_validation import cross_val_score
+from sklearn.metrics import v_measure_score
 
 from Bio import SeqIO
 
@@ -90,8 +90,7 @@ def main():
 
     logging.info(hasher)
 
-    classifier = PassiveAggressiveClassifier()
-    dummy_classifier = DummyClassifier()
+    classifier = MiniBatchKMeans()
 
     with open(args.fasta_file) as handle:
         logging.info('loading data')
@@ -115,15 +114,14 @@ def main():
             vectors = hasher.transform(features)
 
             logging.info('fitting training chunk')
-            classifier.partial_fit(vectors, labels, classes=classes)
+            classifier.partial_fit(vectors, labels)
 
             logging.info('cross-validating w/ testing chunk')
-            scores = cross_val_score(classifier, t_features, t_labels)
-            dummy_scores = cross_val_score(dummy_classifier, t_features, t_labels)
+            t_pred = classifier.predict(t_features)
 
-            logging.info('score: %.2f (SD=%.2f)' % (np.mean(scores), np.std(scores)))
-            logging.info('dummy score: %.2f (SD=%.2f)' % (np.mean(dummy_scores), np.std(dummy_scores)))
+            t_score = v_measure_score(labels, t_labels)
 
+            logging.info('score: %.2f' % (t_score))
 
 
 
