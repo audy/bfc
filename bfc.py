@@ -58,7 +58,7 @@ def get_label(record, level):
 
 
 def get_classes(records):
-    classes = list(set( get_label(i, 'Phylum') for i in records ))
+    classes = list(set( get_label(i, 'Genus') for i in records ))
 
     encoder = LabelEncoder()
     encoder.fit_transform(classes)
@@ -114,13 +114,13 @@ def main():
             vectors = hasher.transform(features)
 
             logging.info('fitting training chunk')
-            classifier.partial_fit(vectors, labels)
+            classifier.partial_fit(vectors)
 
             logging.info('cross-validating w/ testing chunk')
             t_pred = classifier.predict(t_features)
 
             t_score = v_measure_score(labels, t_labels)
-            t_score = v_measure_score(labels, sample(t_labels, len(t_labels)))
+            shuffled_score = v_measure_score(labels, sample(t_labels, len(t_labels)))
 
             logging.info('score: %.2f' % (t_score))
             logging.info('shuffled score: %.2f' % (shuffled_score))
