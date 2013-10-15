@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--ngram-max', default=12, type=int)
     parser.add_argument('--tax-level', default='Phylum', type=str)
     parser.add_argument('--verbose', default=False, action='store_true')
-    parser.add_argument('--n-samples', default=1000)
+    parser.add_argument('--n-iters', default=1000)
 
     return parser.parse_args()
 
@@ -120,38 +120,43 @@ def main():
 
     logging.info(hasher)
 
-    classifier = MiniBatchKMeans()
+    logging.info('consuming %s' % args.fasta_file)
 
     with open(args.fasta_file) as handle:
-
-        logging.info('using taxonomy level %s' % args.tax_level)
-        logging.info('ngram range: [%s-%s]' % (args.ngram_min, args.ngram_max))
-
-        logging.info('loading data')
         records = list(SeqIO.parse(handle, 'fasta'))
 
-        encoder, classes = get_classes(records, args.tax_level)
+    logging.info('consumed %s records' % len(records))
 
-        records = records[0:args.n_samples]
+    encoder, classes = get_classes(records, args.tax_level)
+    n_clusters = len(classes)
 
-        chunk_generator = iter_chunk(records, args.chunk_size, args.tax_level)
+    logging.info('using taxonomic level %s' % args.tax_level)
+    logging.info('Using %s clusters' % n_clusters)
 
-        for labels, features in chunk_generator:
+    classifier = MiniBatchKMeans(n_clusters = n_clusters)
 
-            logging.info('transforming training chunk')
-            labels = encoder.transform(labels)
-            vectors = hasher.transform(features)
+    records = records[0:args.n_iters]
 
-            logging.info('fitting training chunk')
-            classifier.partial_fit(vectors)
+    chunk_generator = iter_chunk(records, args.chunk_size, args.tax_level)
 
-            pred_labels = classifier.predict(vectors)
+    logging.info('ngram range: [%s-%s]' % (args.ngram_min, args.ngram_max))
 
-            score = v_measure_score(labels, pred_labels)
-            shuffled_score = v_measure_score(labels, sample(pred_labels, len(pred_labels)))
+    for labels, features in chunk_generator:
 
-            logging.info('score: %.2f' % (score))
-            logging.info('shuffled score: %.2f' % (shuffled_score))
+        logging.info('transforming training chunk')
+        labels = encoder.transform(labels)
+        vectors = hasher.transform(features)
+
+        logging.info('fitting training chunk')
+        classifier.partial_fit(vectors)
+
+        pred_labels = classifier.predict(vectors)
+
+        score = v_measure_score(labels, pred_labels)
+        shuffled_score = v_measure_score(labels, sample(pred_labels, len(pred_labels)))
+
+        logging.info('score: %.2f' % (score))
+        logging.info('shuffled score: %.2f' % (shuffled_score))
 
 
 if __name__ == '__main__':
