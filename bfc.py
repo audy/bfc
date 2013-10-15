@@ -120,9 +120,10 @@ def main():
             t_pred = classifier.predict(t_features)
 
             t_score = v_measure_score(labels, t_labels)
+            t_score = v_measure_score(labels, sample(t_labels, len(t_labels)))
 
             logging.info('score: %.2f' % (t_score))
-
+            logging.info('shuffled score: %.2f' % (shuffled_score))
 
 
 if __name__ == '__main__':
