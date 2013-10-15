@@ -125,7 +125,7 @@ def main():
     with open(args.fasta_file) as handle:
 
         logging.info('using taxonomy level %s' % args.tax_level)
-        logging.info('ngram range: [%s-%s)' % (args.ngram_min, args.ngram_max))
+        logging.info('ngram range: [%s-%s]' % (args.ngram_min, args.ngram_max))
 
         logging.info('loading data')
         records = list(SeqIO.parse(handle, 'fasta'))
@@ -136,14 +136,6 @@ def main():
 
         chunk_generator = iter_chunk(records, args.chunk_size, args.tax_level)
 
-        logging.info('fetching testing chunk')
-        t_labels, t_features = chunk_generator.pop()
-
-        logging.info('transforming testing chunk')
-
-        t_labels = encoder.transform(t_labels)
-        t_features = hasher.transform(t_features)
-
         for labels, features in chunk_generator:
 
             logging.info('transforming training chunk')
@@ -153,13 +145,12 @@ def main():
             logging.info('fitting training chunk')
             classifier.partial_fit(vectors)
 
-            logging.info('cross-validating w/ testing chunk')
-            t_pred = classifier.predict(t_features)
+            pred_labels = classifier.predict(vectors)
 
-            t_score = v_measure_score(labels, t_labels)
-            shuffled_score = v_measure_score(labels, sample(t_labels, len(t_labels)))
+            score = v_measure_score(labels, pred_labels)
+            shuffled_score = v_measure_score(labels, sample(pred_labels, len(pred_labels)))
 
-            logging.info('score: %.2f' % (t_score))
+            logging.info('score: %.2f' % (score))
             logging.info('shuffled score: %.2f' % (shuffled_score))
 
 
