@@ -24,10 +24,15 @@ ALLOWED_CHARS = [ 'G', 'A', 'T', 'C' ]
 def parse_args():
     ''' doctstring for parse_args '''
     parser = argparse.ArgumentParser()
+
     parser.add_argument('--fasta-file')
     parser.add_argument('--chunk-size', default=10, type=int)
     parser.add_argument('--ngram-min', default=10, type=int)
     parser.add_argument('--ngram-max', default=12, type=int)
+    parser.add_argument('--tax-level', default='Phylum', type=str)
+    parser.add_argument('--verbose', default=False, action='store_true')
+    parser.add_argument('--n-samples', default=1000)
+
     return parser.parse_args()
 
 
@@ -37,28 +42,47 @@ def grouper(iterable, n, fillvalue=None):
     return izip_longest(fillvalue=fillvalue, *args)
 
 
-def iter_chunk(records, size):
+def iter_chunk(records, size, level):
 
-    while True:
+    iter_list = []
 
-        logging.info('getting chunk of size %s' % size)
+    for i in range(0, len(records), size):
 
-        chunk = sample(records, size)
+        logging.debug('sampling the %s -th through %s -th sample' %(i, i+size))
+
+        chunk = records[i:i+size]
+
+        logging.debug('got chunk of size %s' % len(chunk))
 
         # throw out records with ambiguous nucleotides
-        labels = [ get_label(r, 'Phylum') for r in records ]
+        labels = [ get_label(r, level) for r in records ]
         features = [ str(r.seq) for r in records ]
 
-        yield labels, features
+        iter_list.append((labels, features))
+
+    logging.info('chunked %s chunks' % len(iter_list))
+    return iter_list
 
 
 def get_label(record, level):
     ''' For now, just returns Phylum '''
-    return record.description.split(';')[1].lstrip('[1]')
+    levels = {
+            'Domain': 0,
+            'Phylum': 1,
+            'Class': 2,
+            'Order': 3,
+            'Family': 4,
+            'Genus': 5,
+            'Species': 6
+            }
+
+    level = levels[level]
+
+    return record.description.split(';')[level]
 
 
-def get_classes(records):
-    classes = list(set( get_label(i, 'Genus') for i in records ))
+def get_classes(records, level):
+    classes = list(set( get_label(i, level) for i in records ))
 
     encoder = LabelEncoder()
     encoder.fit_transform(classes)
@@ -66,6 +90,7 @@ def get_classes(records):
     classes = np.unique(classes)
 
     return encoder, classes
+
 
 def dna_to_binary(s):
     binary_table = {
@@ -82,7 +107,12 @@ def main():
 
     args = parse_args()
 
-    logging.basicConfig(filename='/dev/stderr', level=logging.DEBUG)
+    if args.verbose:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+
+    logging.basicConfig(filename='/dev/stderr', level=log_level)
 
     hasher = HashingVectorizer(analyzer='char',
                                n_features = 2 ** 18,
@@ -93,17 +123,24 @@ def main():
     classifier = MiniBatchKMeans()
 
     with open(args.fasta_file) as handle:
+
+        logging.info('using taxonomy level %s' % args.tax_level)
+        logging.info('ngram range: [%s-%s)' % (args.ngram_min, args.ngram_max))
+
         logging.info('loading data')
         records = list(SeqIO.parse(handle, 'fasta'))
 
-        encoder, classes = get_classes(records)
+        encoder, classes = get_classes(records, args.tax_level)
 
-        chunk_generator = iter_chunk(records, args.chunk_size)
+        records = records[0:args.n_samples]
+
+        chunk_generator = iter_chunk(records, args.chunk_size, args.tax_level)
 
         logging.info('fetching testing chunk')
-        t_labels, t_features = chunk_generator.next()
+        t_labels, t_features = chunk_generator.pop()
 
         logging.info('transforming testing chunk')
+
         t_labels = encoder.transform(t_labels)
         t_features = hasher.transform(t_features)
 
