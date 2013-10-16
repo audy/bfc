@@ -37,7 +37,11 @@ def parse_args():
 
 
 def grouper(iterable, n, fillvalue=None):
-    "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
+    '''
+    Chunks an iterable into n-sized chunks. Optionally, specify
+    fillvalue to fill overflows
+    '''
+
     args = [iter(iterable)] * n
     return izip_longest(fillvalue=fillvalue, *args)
 
