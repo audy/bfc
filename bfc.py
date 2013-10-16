@@ -18,7 +18,7 @@ from Bio import SeqIO
 
 from random import sample
 
-
+# list of allowed nucleotide characters (currently not implemented)
 ALLOWED_CHARS = [ 'G', 'A', 'T', 'C' ]
 
 def parse_args():
@@ -117,6 +117,8 @@ def get_classes(records, level):
 def dna_to_binary(s):
     ''' Convert a string of nucleotides {G, A, T, C} to a 2-bit
     binary representation.
+
+    (currently not used)
     '''
 
     binary_table = {
