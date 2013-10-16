@@ -110,6 +110,10 @@ def get_classes(records, level):
 
 
 def dna_to_binary(s):
+    ''' Convert a string of nucleotides {G, A, T, C} to a 2-bit
+    binary representation.
+    '''
+
     binary_table = {
             'G': 0b00,
             'A': 0b01,
