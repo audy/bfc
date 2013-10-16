@@ -90,6 +90,15 @@ def get_label(taxonomy, level):
 
 
 def get_classes(records, level):
+    ''' Returns list of classes given a list of SeqIO records.
+        Classes are defined by taxonomic descriptions at a specific
+        level.
+
+        For example, the classes for a list of taxonomic descriptions at the
+        Phylum level would be a list of all the phyla included in the list of
+        records
+    '''
+
     classes = list(set( get_label(i.description, level) for i in records ))
 
     encoder = LabelEncoder()
