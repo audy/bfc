@@ -55,7 +55,7 @@ def iter_chunk(records, size, level):
         logging.debug('got chunk of size %s' % len(chunk))
 
         # throw out records with ambiguous nucleotides
-        labels = [ get_label(r, level) for r in records ]
+        labels = [ get_label(r.description, level) for r in records ]
         features = [ str(r.seq) for r in records ]
 
         iter_list.append((labels, features))
@@ -64,8 +64,16 @@ def iter_chunk(records, size, level):
     return iter_list
 
 
-def get_label(record, level):
-    ''' For now, just returns Phylum '''
+def get_label(taxonomy, level):
+    ''' Return the label given a TaxCollector string and
+        taxonomic level i.e. Genus
+
+        >>> label = get_label('[0]Domain[1]Phylum[2]Class[3]Order[4]Family[5]Genus[6]Species', 'Species')
+        >>> print label
+        Species
+
+    '''
+
     levels = {
             'Domain': 0,
             'Phylum': 1,
@@ -78,11 +86,11 @@ def get_label(record, level):
 
     level = levels[level]
 
-    return record.description.split(';')[level]
+    return taxonomy.split(';')[level]
 
 
 def get_classes(records, level):
-    classes = list(set( get_label(i, level) for i in records ))
+    classes = list(set( get_label(i.description, level) for i in records ))
 
     encoder = LabelEncoder()
     encoder.fit_transform(classes)
