@@ -43,6 +43,7 @@ def grouper(iterable, n, fillvalue=None):
 
 
 def iter_chunk(records, size, level):
+    ''' Iterates over records return chunks of a specified size '''
 
     iter_list = []
 
