@@ -130,30 +130,48 @@ def dna_to_binary(s):
     return [ binary_table[i.upper()] for i in s ]
 
 
-def main():
-    ''' doctsring for main '''
+def setup_logging(verbose=False):
+    ''' sets up the logger based on the verbosity '''
 
-    args = parse_args()
-
-    if args.verbose:
+    # Setup logging
+    if verbose:
         log_level = logging.DEBUG
     else:
         log_level = logging.INFO
 
     logging.basicConfig(filename='/dev/stderr', level=log_level)
 
-    hasher = HashingVectorizer(analyzer='char',
-                               n_features = 2 ** 18,
-                               ngram_range=(args.ngram_min, args.ngram_max))
+def consume_fasta(fasta_file):
+    ''' Consumes an entire FASTA file returning
+    a list of SeqIO records. '''
 
-    logging.info(hasher)
+    logging.info('consuming %s' % fasta_file)
 
-    logging.info('consuming %s' % args.fasta_file)
-
-    with open(args.fasta_file) as handle:
+    with open(fasta_file) as handle:
         records = list(SeqIO.parse(handle, 'fasta'))
 
     logging.info('consumed %s records' % len(records))
+
+    return records
+
+
+def main():
+    ''' doctsring for main '''
+
+    args = parse_args()
+
+    setup_logging(verbose = args.verbose)
+
+    records = consume_fasta(args.fasta_file)
+
+    # setup Hasher, Vectorizer and Classifier
+
+    hasher = HashingVectorizer(analyzer='char',
+                               n_features = 2 ** 18,
+                               ngram_range=(args.ngram_min, args.ngram_max),
+                               )
+
+    logging.info(hasher)
 
     encoder, classes = get_classes(records, args.tax_level)
     n_clusters = len(classes)
