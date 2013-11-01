@@ -114,22 +114,6 @@ def get_classes(records, level):
     return encoder, classes
 
 
-def dna_to_binary(s):
-    ''' Convert a string of nucleotides {G, A, T, C} to a 2-bit
-    binary representation.
-
-    (currently not used)
-    '''
-
-    binary_table = {
-            'G': 0b00,
-            'A': 0b01,
-            'T': 0b10,
-            'C': 0b11
-            }
-    return [ binary_table[i.upper()] for i in s ]
-
-
 def setup_logging(verbose=False):
     ''' sets up the logger based on the verbosity '''
 
@@ -140,6 +124,7 @@ def setup_logging(verbose=False):
         log_level = logging.INFO
 
     logging.basicConfig(filename='/dev/stderr', level=log_level)
+
 
 def consume_fasta(fasta_file):
     ''' Consumes an entire FASTA file returning
